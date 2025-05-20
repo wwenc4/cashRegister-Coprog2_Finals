@@ -284,54 +284,87 @@ public class cRegUpdated {
         }
     }
 
-    public static void payBill(double totalAmount, ArrayList<Product> productList, Scanner sc) {
-        if (totalAmount <= 0) {
-            System.out.println("No payment due. Cart is empty or invalid.");
-            return;
-        }
+  public static void payBill(double totalAmount, ArrayList<Product> productList, Scanner sc) {
+    if (totalAmount <= 0) {
+        System.out.println("No payment due. Cart is empty or invalid.");
+        return;
+    }
 
-        System.out.printf("Total amount due: P%.2f%n", totalAmount);
-        double payment;
-        while (true) {
-            System.out.print("Enter amount to pay: ");
-            try {
-                payment = Double.parseDouble(sc.nextLine());
-                if (payment >= 0) break;
-                System.out.println("Payment cannot be negative.");
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid payment. Please enter a valid number.");
-            }
-        }
-
-        if (payment >= totalAmount) {
-            while (true) {
-                System.out.print("Confirm payment and clear cart? [Y/N]: ");
-                String confirm = sc.nextLine();
-                if (confirm.equalsIgnoreCase("y")) {
-                    System.out.printf("Payment successful! \nChange: P%.2f%n", payment - totalAmount);
-                    productList.clear();
-                    return;
-                } else if (confirm.equalsIgnoreCase("n")) {
-                    System.out.println("Payment canceled.");
-                    return;
-                } else {
-                    System.out.println("Invalid input. Enter Y or N.");
-                }
-            }
-        } else {
-            System.out.println("Insufficient funds. Payment failed.");
-            while (true) {
-                System.out.print("Try again? [Y/N]: ");
-                String retry = sc.nextLine();
-                if (retry.equalsIgnoreCase("y")) {
-                    payBill(totalAmount, productList, sc); // Retry payment
-                    return;
-                } else if (retry.equalsIgnoreCase("n")) {
-                    return;
-                } else {
-                    System.out.println("Invalid input. Enter Y or N.");
-                }
-            }
+    System.out.printf("Total amount due: P%.2f%n", totalAmount);
+    double payment;
+    while (true) {
+        System.out.print("Enter amount to pay: ");
+        try {
+            payment = Double.parseDouble(sc.nextLine());
+            if (payment >= 0) break;
+            System.out.println("Payment cannot be negative.");
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid payment. Please enter a valid number.");
         }
     }
+
+    if (payment >= totalAmount) {
+        while (true) {
+            System.out.print("Confirm payment and print receipt? [Y/N]: ");
+            String confirm = sc.nextLine();
+            if (confirm.equalsIgnoreCase("y")) {
+                double change = payment - totalAmount;
+
+                // Create receipt content
+                StringBuilder receipt = new StringBuilder();
+                receipt.append("=========== RECEIPT =========\n");
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy @ HH:mm:ss");
+                receipt.append("Date: ").append(LocalDateTime.now().format(formatter)).append("\n\n");
+
+                for (Product product : productList) {
+                    receipt.append(product).append("\n");
+                }
+
+                receipt.append(String.format("\nTotal: P%.2f", totalAmount));
+                receipt.append(String.format("\nPaid: P%.2f", payment));
+                receipt.append(String.format("\nChange: P%.2f", change));
+                receipt.append("\n=============================\n\n");
+
+                // Ensure directory exists
+                File dir = new File(TODO_DIR);
+                if (!dir.exists()) dir.mkdirs();
+
+                // Ask for filename
+                System.out.print("Enter receipt file name: ");
+                String fileName = sc.nextLine();
+                if (!fileName.toLowerCase().endsWith(".txt")) {
+                    fileName += ".txt";
+                }
+                String filePath = TODO_DIR + File.separator + fileName;
+
+                // Write to file
+                writer(filePath, receipt.toString());
+
+                System.out.println("Receipt saved to: " + filePath);
+                productList.clear();
+                return;
+
+            } else if (confirm.equalsIgnoreCase("n")) {
+                System.out.println("Payment canceled.");
+                return;
+            } else {
+                System.out.println("Invalid input. Enter Y or N.");
+            }
+        }
+    } else {
+        System.out.println("Insufficient funds. Payment failed.");
+        while (true) {
+            System.out.print("Try again? [Y/N]: ");
+            String retry = sc.nextLine();
+            if (retry.equalsIgnoreCase("y")) {
+                payBill(totalAmount, productList, sc); // Retry
+                return;
+            } else if (retry.equalsIgnoreCase("n")) {
+                return;
+            } else {
+                System.out.println("Invalid input. Enter Y or N.");
+                }
+            }
+        }
+    }  
 }
