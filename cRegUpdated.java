@@ -8,7 +8,7 @@ import java.io.*;
 
 public class cRegUpdated {
 
-    private static final String TODO_DIR = "to-do lists";
+    private static final String TODO_DIR = "receipts";
     private static final Scanner sc = new Scanner(System.in);
 
     public static void writer(String fileName, String receipt){
