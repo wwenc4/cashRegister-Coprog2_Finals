@@ -7,6 +7,19 @@ import java.io.*;
 //---------------------------------------
 
 public class cRegUpdated {
+
+    private static final String TODO_DIR = "to-do lists";
+    private static final Scanner sc = new Scanner(System.in);
+
+    public static void writer(String fileName, String receipt){
+        try(BufferedWriter pen = new BufferedWriter(new FileWriter (fileName, true))){
+            pen.write(receipt);
+            pen.newLine();
+            pen.flush();
+        } catch (IOException e) {
+            System.out.println("An error occurred while writing to the file: " + e.getMessage());
+        }
+    }
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         ArrayList<String> users = new ArrayList<>();
