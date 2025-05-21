@@ -6,7 +6,7 @@ import java.io.*;
 
 public class cRegUpdated {
 
-    private static final String TODO_DIR = "receipts";
+    private static final String RECEIPT_DIR = "receipts";
     private static final Scanner sc = new Scanner(System.in);
 
     public static void writer(String fileName, String receipt){
@@ -320,7 +320,7 @@ public class cRegUpdated {
                     receipt.append(String.format("\nChange: P%.2f", change));
                     receipt.append("\n=============================\n\n");
 
-                    File dir = new File(TODO_DIR);
+                    File dir = new File(RECEIPT_DIR);
                     if (!dir.exists()) dir.mkdirs();
 
                     System.out.print("Enter receipt file name: ");
@@ -328,7 +328,7 @@ public class cRegUpdated {
                     if (!fileName.toLowerCase().endsWith(".txt")) {
                         fileName += ".txt";
                     }
-                    String filePath = TODO_DIR + File.separator + fileName;
+                    String filePath = RECEIPT_DIR + File.separator + fileName;
 
                     writer(filePath, receipt.toString());
 
