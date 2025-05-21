@@ -18,8 +18,8 @@ public class cRegUpdated {
             System.out.println("An error occurred while writing to the file: " + e.getMessage());
         }
     }
-
     public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
         ArrayList<String> users = new ArrayList<>();
         authMenu(users, sc);
         sc.close();
@@ -28,7 +28,7 @@ public class cRegUpdated {
     public static void authMenu(ArrayList<String> users, Scanner sc) {
         while (true) {
             System.out.println("\n<<Welcome. Please log in or register to continue.>>");
-            System.out.print("1. Log In\n2. Register\n3. View Users\n4. Exit\nChoose an option (1-4): ");
+            System.out.print("1. Log In\n2. Register\n3. Show Users\n4. Exit\nChoose an option (1-4): ");
             String input = sc.nextLine();
             if (input.trim().isEmpty()) {
                 System.out.println("Input cannot be empty. Please enter a number between 1 and 4.");
@@ -43,10 +43,10 @@ public class cRegUpdated {
             }
             switch (choice) {
                 case 1:
-                    String loggedInUser = Access(users, sc);
-                    if (loggedInUser != null) {
+                    String activeCashier = Access(users, sc);
+                    if (activeCashier != null) {
                         ArrayList<Product> productList = new ArrayList<>();
-                        cashRegisterMenu(productList, sc, loggedInUser);
+                        cashRegisterMenu(productList, sc, activeCashier);
                     }
                     break;
                 case 2:
@@ -72,7 +72,7 @@ public class cRegUpdated {
         }
     }
 
-    public static void cashRegisterMenu(ArrayList<Product> productList, Scanner sc, String loggedInUser) {
+    public static void cashRegisterMenu(ArrayList<Product> productList, Scanner sc, String activeCashier) {
         while (true) {
             System.out.println("\n==============================");
             System.out.println("<< Cash Register >>");
@@ -97,14 +97,14 @@ public class cRegUpdated {
                     addProducts(productList, sc);
                     break;
                 case 2:
-                    display(productList, sc);
+                    display(productList, sc, activeCashier);
                     break;
                 case 3:
                     double totalAmount = 0;
                     for (Product product : productList) {
                         totalAmount += product.getTotalPrice();
                     }
-                    payBill(totalAmount, productList, sc, loggedInUser);
+                    payBill(totalAmount, productList, sc, activeCashier);
                     break;
                 case 4:
                     System.out.println("Returning to login menu...");
@@ -124,7 +124,7 @@ public class cRegUpdated {
 
         if (login(users, username, password)) {
             System.out.println("Login successful! Welcome, " + username + "!");
-            return username;
+            return username;  // return the active username on success
         } else {
             System.out.println("Login failed. Please try again.");
             return null;
@@ -178,7 +178,6 @@ public class cRegUpdated {
         }
         return false;
     }
-
     private static class Product {
         private String name;
         private double price;
@@ -248,7 +247,7 @@ public class cRegUpdated {
         }
     }
 
-    public static void display(ArrayList<Product> productList, Scanner sc) {
+    public static void display(ArrayList<Product> productList, Scanner sc, String activeCashier) {
         if (productList.isEmpty()) {
             System.out.println("==============================");
             System.out.println("Cart is empty.");
@@ -268,7 +267,7 @@ public class cRegUpdated {
                 System.out.print("Pay? [Y/N]: ");
                 String choice = sc.nextLine();
                 if (choice.equalsIgnoreCase("y")) {
-                    payBill(totalAmount, productList, sc, "Unknown");
+                    payBill(totalAmount, productList, sc, activeCashier);
                     return;
                 } else if (choice.equalsIgnoreCase("n")) {
                     return;
@@ -279,7 +278,7 @@ public class cRegUpdated {
         }
     }
 
-    public static void payBill(double totalAmount, ArrayList<Product> productList, Scanner sc, String loggedInUser) {
+    public static void payBill(double totalAmount, ArrayList<Product> productList, Scanner sc, String activeCashier) {
         if (totalAmount <= 0) {
             System.out.println("No payment due. Cart is empty or invalid.");
             return;
@@ -309,20 +308,26 @@ public class cRegUpdated {
                     receipt.append("=========== RECEIPT =========\n");
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy @ HH:mm:ss");
                     receipt.append("Date: ").append(LocalDateTime.now().format(formatter)).append("\n");
-                    receipt.append("Cashier: ").append(loggedInUser).append("\n\n");
+                    receipt.append("Cashier: ").append(activeCashier).append("\n\n");
+
+                    receipt.append(String.format("%-20s | %-8s | %-8s | %-10s\n", "Product", "Price", "Quantity", "Total"));
+                    receipt.append("-----------------------------------------------------------\n");
 
                     for (Product product : productList) {
-                        receipt.append(product).append("\n");
+                        receipt.append(String.format("%-20s | P%7.2f | %8d | P%9.2f\n",
+                                product.name, product.price, product.quantity, product.getTotalPrice()));
                     }
 
-                    receipt.append(String.format("\nTotal: P%.2f", totalAmount));
-                    receipt.append(String.format("\nPaid: P%.2f", payment));
-                    receipt.append(String.format("\nChange: P%.2f", change));
-                    receipt.append("\n=============================\n\n");
+                    receipt.append("-----------------------------------------------------------\n");
+                    receipt.append(String.format("%-20s | %-8s | %-8s | P%9.2f\n", "", "", "Total:", totalAmount));
+                    receipt.append(String.format("%-20s | %-8s | %-8s | P%9.2f\n", "", "", "Paid:", payment));
+                    receipt.append(String.format("%-20s | %-8s | %-8s | P%9.2f\n", "", "", "Change:", change));
+                    receipt.append("=============================\n\n");
 
                     File dir = new File(RECEIPT_DIR);
                     if (!dir.exists()) dir.mkdirs();
 
+                    // Ask for filename
                     System.out.print("Enter receipt file name: ");
                     String fileName = sc.nextLine();
                     if (!fileName.toLowerCase().endsWith(".txt")) {
@@ -330,11 +335,13 @@ public class cRegUpdated {
                     }
                     String filePath = RECEIPT_DIR + File.separator + fileName;
 
+                    // Write to file
                     writer(filePath, receipt.toString());
 
                     System.out.println("Receipt saved to: " + filePath);
                     productList.clear();
                     return;
+
                 } else if (confirm.equalsIgnoreCase("n")) {
                     System.out.println("Payment canceled.");
                     return;
@@ -348,7 +355,7 @@ public class cRegUpdated {
                 System.out.print("Try again? [Y/N]: ");
                 String retry = sc.nextLine();
                 if (retry.equalsIgnoreCase("y")) {
-                    payBill(totalAmount, productList, sc, loggedInUser);
+                    payBill(totalAmount, productList, sc, activeCashier);
                     return;
                 } else if (retry.equalsIgnoreCase("n")) {
                     return;
