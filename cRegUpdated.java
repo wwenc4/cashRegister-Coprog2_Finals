@@ -4,8 +4,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.io.*;
 
-//---------------------------------------
-
 public class cRegUpdated {
 
     private static final String TODO_DIR = "receipts";
@@ -20,18 +18,17 @@ public class cRegUpdated {
             System.out.println("An error occurred while writing to the file: " + e.getMessage());
         }
     }
+
     public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
         ArrayList<String> users = new ArrayList<>();
         authMenu(users, sc);
         sc.close();
     }
 
-    // Authentication menu
     public static void authMenu(ArrayList<String> users, Scanner sc) {
         while (true) {
             System.out.println("\n<<Welcome. Please log in or register to continue.>>");
-            System.out.print("1. Log In\n2. Register\n3. Exit\nChoose an option (1-4): ");
+            System.out.print("1. Log In\n2. Register\n3. View Users\n4. Exit\nChoose an option (1-4): ");
             String input = sc.nextLine();
             if (input.trim().isEmpty()) {
                 System.out.println("Input cannot be empty. Please enter a number between 1 and 4.");
@@ -46,9 +43,10 @@ public class cRegUpdated {
             }
             switch (choice) {
                 case 1:
-                    if (Access(users, sc)) {
+                    String loggedInUser = Access(users, sc);
+                    if (loggedInUser != null) {
                         ArrayList<Product> productList = new ArrayList<>();
-                        cashRegisterMenu(productList, sc);
+                        cashRegisterMenu(productList, sc, loggedInUser);
                     }
                     break;
                 case 2:
@@ -74,8 +72,7 @@ public class cRegUpdated {
         }
     }
 
-    // Cash register menu
-    public static void cashRegisterMenu(ArrayList<Product> productList, Scanner sc) {
+    public static void cashRegisterMenu(ArrayList<Product> productList, Scanner sc, String loggedInUser) {
         while (true) {
             System.out.println("\n==============================");
             System.out.println("<< Cash Register >>");
@@ -107,7 +104,7 @@ public class cRegUpdated {
                     for (Product product : productList) {
                         totalAmount += product.getTotalPrice();
                     }
-                    payBill(totalAmount, productList, sc);
+                    payBill(totalAmount, productList, sc, loggedInUser);
                     break;
                 case 4:
                     System.out.println("Returning to login menu...");
@@ -119,8 +116,7 @@ public class cRegUpdated {
         }
     }
 
-    // signupLogin methods
-    public static boolean Access(ArrayList<String> users, Scanner sc) {
+    public static String Access(ArrayList<String> users, Scanner sc) {
         System.out.println("Enter your username:");
         String username = sc.nextLine();
         System.out.println("Enter your password:");
@@ -128,10 +124,10 @@ public class cRegUpdated {
 
         if (login(users, username, password)) {
             System.out.println("Login successful! Welcome, " + username + "!");
-            return true;
+            return username;
         } else {
             System.out.println("Login failed. Please try again.");
-            return false;
+            return null;
         }
     }
 
@@ -183,7 +179,6 @@ public class cRegUpdated {
         return false;
     }
 
-    // cReg methods
     private static class Product {
         private String name;
         private double price;
@@ -273,7 +268,7 @@ public class cRegUpdated {
                 System.out.print("Pay? [Y/N]: ");
                 String choice = sc.nextLine();
                 if (choice.equalsIgnoreCase("y")) {
-                    payBill(totalAmount, productList, sc);
+                    payBill(totalAmount, productList, sc, "Unknown");
                     return;
                 } else if (choice.equalsIgnoreCase("n")) {
                     return;
@@ -284,87 +279,83 @@ public class cRegUpdated {
         }
     }
 
-  public static void payBill(double totalAmount, ArrayList<Product> productList, Scanner sc) {
-    if (totalAmount <= 0) {
-        System.out.println("No payment due. Cart is empty or invalid.");
-        return;
-    }
-
-    System.out.printf("Total amount due: P%.2f%n", totalAmount);
-    double payment;
-    while (true) {
-        System.out.print("Enter amount to pay: ");
-        try {
-            payment = Double.parseDouble(sc.nextLine());
-            if (payment >= 0) break;
-            System.out.println("Payment cannot be negative.");
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid payment. Please enter a valid number.");
+    public static void payBill(double totalAmount, ArrayList<Product> productList, Scanner sc, String loggedInUser) {
+        if (totalAmount <= 0) {
+            System.out.println("No payment due. Cart is empty or invalid.");
+            return;
         }
-    }
 
-    if (payment >= totalAmount) {
+        System.out.printf("Total amount due: P%.2f%n", totalAmount);
+        double payment;
         while (true) {
-            System.out.print("Confirm payment and print receipt? [Y/N]: ");
-            String confirm = sc.nextLine();
-            if (confirm.equalsIgnoreCase("y")) {
-                double change = payment - totalAmount;
-
-                // Create receipt content
-                StringBuilder receipt = new StringBuilder();
-                receipt.append("=========== RECEIPT =========\n");
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy @ HH:mm:ss");
-                receipt.append("Date: ").append(LocalDateTime.now().format(formatter)).append("\n\n");
-
-                for (Product product : productList) {
-                    receipt.append(product).append("\n");
-                }
-
-                receipt.append(String.format("\nTotal: P%.2f", totalAmount));
-                receipt.append(String.format("\nPaid: P%.2f", payment));
-                receipt.append(String.format("\nChange: P%.2f", change));
-                receipt.append("\n=============================\n\n");
-
-                // Ensure directory exists
-                File dir = new File(TODO_DIR);
-                if (!dir.exists()) dir.mkdirs();
-
-                // Ask for filename
-                System.out.print("Enter receipt file name: ");
-                String fileName = sc.nextLine();
-                if (!fileName.toLowerCase().endsWith(".txt")) {
-                    fileName += ".txt";
-                }
-                String filePath = TODO_DIR + File.separator + fileName;
-
-                // Write to file
-                writer(filePath, receipt.toString());
-
-                System.out.println("Receipt saved to: " + filePath);
-                productList.clear();
-                return;
-
-            } else if (confirm.equalsIgnoreCase("n")) {
-                System.out.println("Payment canceled.");
-                return;
-            } else {
-                System.out.println("Invalid input. Enter Y or N.");
+            System.out.print("Enter amount to pay: ");
+            try {
+                payment = Double.parseDouble(sc.nextLine());
+                if (payment >= 0) break;
+                System.out.println("Payment cannot be negative.");
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid payment. Please enter a valid number.");
             }
         }
-    } else {
-        System.out.println("Insufficient funds. Payment failed.");
-        while (true) {
-            System.out.print("Try again? [Y/N]: ");
-            String retry = sc.nextLine();
-            if (retry.equalsIgnoreCase("y")) {
-                payBill(totalAmount, productList, sc); // Retry
-                return;
-            } else if (retry.equalsIgnoreCase("n")) {
-                return;
-            } else {
-                System.out.println("Invalid input. Enter Y or N.");
+
+        if (payment >= totalAmount) {
+            while (true) {
+                System.out.print("Confirm payment and print receipt? [Y/N]: ");
+                String confirm = sc.nextLine();
+                if (confirm.equalsIgnoreCase("y")) {
+                    double change = payment - totalAmount;
+
+                    StringBuilder receipt = new StringBuilder();
+                    receipt.append("=========== RECEIPT =========\n");
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy @ HH:mm:ss");
+                    receipt.append("Date: ").append(LocalDateTime.now().format(formatter)).append("\n");
+                    receipt.append("Cashier: ").append(loggedInUser).append("\n\n");
+
+                    for (Product product : productList) {
+                        receipt.append(product).append("\n");
+                    }
+
+                    receipt.append(String.format("\nTotal: P%.2f", totalAmount));
+                    receipt.append(String.format("\nPaid: P%.2f", payment));
+                    receipt.append(String.format("\nChange: P%.2f", change));
+                    receipt.append("\n=============================\n\n");
+
+                    File dir = new File(TODO_DIR);
+                    if (!dir.exists()) dir.mkdirs();
+
+                    System.out.print("Enter receipt file name: ");
+                    String fileName = sc.nextLine();
+                    if (!fileName.toLowerCase().endsWith(".txt")) {
+                        fileName += ".txt";
+                    }
+                    String filePath = TODO_DIR + File.separator + fileName;
+
+                    writer(filePath, receipt.toString());
+
+                    System.out.println("Receipt saved to: " + filePath);
+                    productList.clear();
+                    return;
+                } else if (confirm.equalsIgnoreCase("n")) {
+                    System.out.println("Payment canceled.");
+                    return;
+                } else {
+                    System.out.println("Invalid input. Enter Y or N.");
+                }
+            }
+        } else {
+            System.out.println("Insufficient funds. Payment failed.");
+            while (true) {
+                System.out.print("Try again? [Y/N]: ");
+                String retry = sc.nextLine();
+                if (retry.equalsIgnoreCase("y")) {
+                    payBill(totalAmount, productList, sc, loggedInUser);
+                    return;
+                } else if (retry.equalsIgnoreCase("n")) {
+                    return;
+                } else {
+                    System.out.println("Invalid input. Enter Y or N.");
                 }
             }
         }
-    }  
+    }
 }
